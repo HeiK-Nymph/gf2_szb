@@ -1,0 +1,107 @@
+// CardWhiteFlash.effect —— 卡牌「整体发亮白光」效果（按贴图 alpha 轮廓提亮到白）
+// ============================================================================
+// 用途：把卡牌**自身**的子 Sprite / Label（卡框、卡图、卡名、数字…）在破坏瞬间
+//       逐渐「洗白」—— 保留每个 Sprite 自己的 alpha 轮廓，所以白光严格贴合
+//       卡牌**实际显示出来的形状**（卡框的圆角/雕花边），而不是一个平直的长方形。
+//
+// 原理：frag 输出 mix(贴图色, flashColor, flash)，alpha 仍用贴图自身 alpha。
+//   flash=0 → 原样；flash=1 → 可见像素全部变成 flashColor（默认纯白），透明区域保持透明。
+//
+// ⚠️ 与 CardGlow / SummonOrbAdd 同样的坑：项目内（db://assets）的 effect **无法引用**
+//    db://internal 的 sprite-vs:vert（会报 EFX2001），所以下面把 builtin-sprite 的
+//    顶点程序原样内联一份。
+//
+// 参数：
+//   flash       0~1，洗白程度（0 = 原色，1 = 全 flashColor）
+//   flashColor  洗白的颜色（默认纯白）
+// ============================================================================
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: card-white-flash-vs:vert
+      frag: card-white-flash-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          # 标准 alpha 混合：flashColor × alpha 覆盖卡面（不是加色，避免过曝时糊成一团）
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: one
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        flash: { value: 0.0 }
+        flashColor: { value: [1.0, 1.0, 1.0, 1.0] }
+}%
+CCProgram card-white-flash-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+CCProgram card-white-flash-fs %{
+  precision highp float;
+
+  in vec4 color;
+  in vec2 uv0;
+
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  uniform Constant {
+    // 🔴 UBO 布局铁律：vec4 必须排在标量之前。
+    //    写成 "float flash;  vec4 flashColor;" 时编辑器的 UBO 布局生成会失败 →
+    //    资源导入报错（meta imported=false、不进 bundle），运行时加载会得到
+    //    "Bundle resources doesn't contain effects/CardWhiteFlash"，洗白整个失效。
+    //    （2026-09-23 二分实测：vec4-first / 纯 float / 全 vec4 三种都能正常导入）
+    vec4 flashColor;    // 洗白后的颜色（默认纯白）
+    float flash;        // 洗白程度 0~1（0 = 原色，1 = 全 flashColor）
+  };
+
+  vec4 frag () {
+    vec4 t = texture(cc_spriteTexture, uv0);
+    vec3 base = t.rgb * color.rgb;
+    float a = t.a * color.a;
+    // 🔑 只改 RGB、保留 alpha ⇒ 白光严格贴合该 Sprite 的显示轮廓
+    vec3 rgb = mix(base, flashColor.rgb, clamp(flash, 0.0, 1.0));
+    return vec4(rgb, a);
+  }
+}%

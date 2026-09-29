@@ -1,0 +1,99 @@
+// SummonOrbAdd.effect —— 卡牌入场「召唤光球」的加色（ADD）混合效果
+// ============================================================================
+// 用途：把 CardSummonOrb 的三张光球贴图（light_01/02/03）以 **加色混合** 叠加渲染，
+//       得到「发光」而不是「糊白」的观感（多层叠加时越叠越亮，暗部不压黑卡面）。
+//
+// 为什么是加色：贴图已预处理为 RGB=白 + A=原亮度（黑底镂空）。
+//   加色公式 src.rgb*src.a + dst ⇒ 白色 × 亮度 加到画面上 = 纯发光，背景（A=0）完全无贡献。
+//   若用标准 alpha 混合，多层叠加会把卡面逐渐冲成灰白雾，失去「能量感」。
+//
+// ⚠️ 与 CardGlow.effect 同样的坑：项目内（db://assets）的 effect **无法引用** db://internal
+//    的 sprite-vs:vert（会报 EFX2001），所以下面把 builtin-sprite 的顶点程序原样内联一份。
+//
+// 参数：
+//   intensity  亮度倍数（加色的强度；>1 用于闪光峰值）
+// ============================================================================
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: summon-orb-vs:vert
+      frag: summon-orb-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          # 🔑 加色混合：src.rgb * src.a + dst（白 × 亮度 累加到画面 = 发光）
+          blendSrc: src_alpha
+          blendDst: one
+          blendSrcAlpha: one
+          blendDstAlpha: one
+      rasterizerState:
+        cullMode: none
+      properties:
+        intensity: { value: 1.0 }
+}%
+CCProgram summon-orb-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+CCProgram summon-orb-fs %{
+  precision highp float;
+
+  // 与内置 sprite-vs 的输出保持一致：color = 顶点色（节点颜色 / 透明度），uv0 = 贴图 UV
+  in vec4 color;
+  in vec2 uv0;
+
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  uniform Constant {
+    float intensity;   // 亮度倍数（加色强度）
+  };
+
+  vec4 frag () {
+    vec4 t = texture(cc_spriteTexture, uv0);
+    // 🔑 顶点色（Sprite.color）负责**染色**，intensity 负责**提亮**；
+    //    加色公式里 src.rgb 会被 src.a 再乘一次，所以 alpha 不再乘 intensity（否则是平方衰减）。
+    vec3 rgb = t.rgb * color.rgb * intensity;
+    float a = t.a * color.a;
+    return vec4(rgb, a);
+  }
+}%

@@ -1,0 +1,121 @@
+# ============================================================================
+#  gf2_szb · 伊利昂之围 —— Git 忽略规则
+# ============================================================================
+#  目标：仓库里**只保留能构建、能继续开发的 Cocos 工程本体**。
+#    ① 开发中的临时 / 中间 / 备份文件            —— 不上传
+#    ② AI 辅助开发相关（Agent 工作区、约定文件、MCP 工具链）—— 不上传
+#    ③ 敏感信息与本机相关缓存                    —— 不上传
+#
+#  会被提交的（重建 + 继续开发只需要这些）：
+#    assets/          游戏本体（场景 / 代码 / 图片 / 特效）
+#    settings/        Cocos 工程设置（settings/v2/packages/*.json）
+#    package.json     工程标识（名称 / uuid / 引擎版本 3.8.8）
+#    tsconfig.json    TypeScript 编译配置
+#    .creator/        自定义脚本模板
+#    README.md、战场背景场景配置.md 等文档
+#  不会被提交但**能自动重建**：library/、temp/（Cocos 打开工程时生成）
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# 1. Cocos Creator 生成物（体积大、完全可重建）
+# ----------------------------------------------------------------------------
+library/
+temp/
+local/
+build/
+profiles/
+native/
+
+
+# ----------------------------------------------------------------------------
+# 2. 开发中的临时 / 中间 / 备份文件
+# ----------------------------------------------------------------------------
+*.log
+*.tmp
+*.temp
+*.bak
+*.bak-*
+*.old
+*.orig
+*.rej
+*.err
+*.out
+*.pid
+*.swp
+*.swo
+*~
+
+# 手动留的场景快照：assets/scene.before_xxx.scene（代码里没有任何引用，
+# 只是开发时"改前留一手"的副本；需要长期保留的建议放工程外）
+assets/*.before_*.scene
+assets/*.before_*.scene.meta
+
+# 处理卡图 / 卡框时留在工程根目录的中间产物
+card_analysis.png
+card_header_test.png
+extra_pp_*.png
+processed_image_*.png
+
+# 误产生的空文件与错误输出
+$null
+_mult.err
+ambush_preprocess.js
+
+
+# ----------------------------------------------------------------------------
+# 3. AI 辅助开发相关
+# ----------------------------------------------------------------------------
+# Agent（Codex 等）的工作区：项目记忆、测试脚本、截图与临时产物
+.workbuddy/
+
+# 给 AI 编码助手的项目约定文件与它的备份
+AGENTS.md
+AGENTS.md.bak*
+CLAUDE.md
+.cursorrules
+.aider*
+.github/copilot-instructions.md
+
+# 其它 Agent / Copilot 的本地配置
+.codex/
+.claude/
+.cursor/
+.continue/
+
+# Cocos MCP 插件（AI 工具链，不属于工程本体；按需自行安装）
+extensions/cocos-mcp-server/
+extensions/cocos-mcp-*.zip
+settings/mcp-server.json
+settings/.mcp-port.json
+settings/.mcp-version
+settings/tool-manager.json
+
+
+# ----------------------------------------------------------------------------
+# 4. 敏感信息（任何情况下都不要提交）
+# ----------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+*.keystore
+*.jks
+*.cer
+**/credentials*.json
+**/secrets*.json
+**/*.local.json
+settings/*.local.json
+
+
+# ----------------------------------------------------------------------------
+# 5. 编辑器 / 系统 / 依赖
+# ----------------------------------------------------------------------------
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

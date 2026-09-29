@@ -1,0 +1,157 @@
+// EvoGuideLine.effect —— 进化 / 攻击引导线：三阶贝塞尔「金色发光光带」（单 Sprite + 纯 shader）
+// ============================================================================
+// 为什么不用 4 个顶点去弯折四边形：Sprite 只有 4 个顶点，弯出来是折线。
+// 这里的做法是 **片元距离场**：Sprite 铺一大块矩形，片元里求「当前像素到三阶贝塞尔的最近距离」，
+// 距离 < 半宽 → 上色，再按距离做「亮芯 + 外光晕」的柔和衰减。于是：
+//   · 单 Sprite、无序列帧、无 Graphics；
+//   · 拖动时只改 4 个控制点 uniform ⇒ 曲线实时扭曲；
+//   · 流光 = 沿曲线参数 t 滚动的高斯光斑（同样纯 shader）。
+//
+// ⚠️ 与 CardWhiteFlash / CardGlow 相同的坑：项目内（db://assets）的 effect 无法引用
+//    db://internal 的 sprite-vs:vert（报 EFX2001），所以把 builtin-sprite 的顶点程序内联一份。
+// ⚠️ UBO 布局铁律（见项目记忆 57）：Constant 里 **vec4 必须排在标量之前**，这里全部是 vec4。
+//
+// 传入坐标：🔴 **世界坐标** —— Cocos 3.x 的 2D 批渲染把世界坐标直接烘进 a_position
+// （UI 渲染不走 USE_LOCAL），所以片元里的「localPos」实际是世界坐标；
+// 脚本端直接传世界坐标即可，不要换算成节点本地坐标（换算了会整体偏移一个 Canvas 原点）。
+// ============================================================================
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: evo-guide-line-vs:vert
+      frag: evo-guide-line-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          # 加色混合：发光光带叠在画面上（layer 越亮越"烫"）
+          blendSrc: src_alpha
+          blendDst: one
+          blendSrcAlpha: one
+          blendDstAlpha: one
+      rasterizerState:
+        cullMode: none
+      properties:
+        p0: { value: [0.0, 0.0, 0.0, 0.0] }
+        p1: { value: [0.0, 0.0, 0.0, 0.0] }
+        p2: { value: [0.0, 0.0, 0.0, 0.0] }
+        p3: { value: [0.0, 0.0, 0.0, 0.0] }
+        coreColor: { value: [1.0, 0.96, 0.84, 1.0] }
+        edgeColor: { value: [1.0, 0.66, 0.16, 1.0] }
+        # x = 光带半宽(px)  y = 外晕扩散倍数  z = 发光强度  w = 两端渐隐比例
+        shapeParams: { value: [26.0, 1.6, 2.0, 0.06] }
+        # x = 流光位置(0~1)  y = 流光宽度  z = 流光亮度  w = 保留
+        flowParams: { value: [0.0, 0.1, 1.2, 0.0] }
+}%
+CCProgram evo-guide-line-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+  out vec2 localPos;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+    // 🔴 用顶点局部坐标而不是 uv：spriteFrame 被 trim 后 uv 与节点矩形不再一致，
+    //    而 a_position 永远是「节点自身矩形」的坐标，做距离场才准。
+    localPos = a_position.xy;
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+    pos = cc_matViewProj * pos;
+
+    uv0 = a_texCoord;
+    color = a_color;
+    return pos;
+  }
+}%
+CCProgram evo-guide-line-fs %{
+  precision highp float;
+
+  in vec4 color;
+  in vec2 uv0;
+  in vec2 localPos;
+
+  uniform Constant {
+    vec4 p0;
+    vec4 p1;
+    vec4 p2;
+    vec4 p3;
+    vec4 coreColor;
+    vec4 edgeColor;
+    vec4 shapeParams;
+    vec4 flowParams;
+  };
+
+  /** 三阶贝塞尔求值 */
+  vec2 bez (float t) {
+    float mt = 1.0 - t;
+    return mt * mt * mt * p0.xy
+         + 3.0 * mt * mt * t * p1.xy
+         + 3.0 * mt * t * t * p2.xy
+         + t * t * t * p3.xy;
+  }
+
+  vec4 frag () {
+    float halfW = max(shapeParams.x, 0.5);
+    float pad = halfW * max(shapeParams.y, 1.0) * 2.5;
+
+    // ① 凸包包围盒早退：贝塞尔一定落在 4 个控制点的凸包内 ⇒ 盒外像素直接丢弃（性能优先）
+    vec2 lo = min(min(p0.xy, p1.xy), min(p2.xy, p3.xy)) - vec2(pad);
+    vec2 hi = max(max(p0.xy, p1.xy), max(p2.xy, p3.xy)) + vec2(pad);
+    if (localPos.x < lo.x || localPos.x > hi.x || localPos.y < lo.y || localPos.y > hi.y) {
+      return vec4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    // ② 最近点搜索：粗采样定位 + 邻域二分细化（同时拿到参数 t，供流光使用）
+    const int N = 18;
+    float bestT = 0.0;
+    float bestD = 1e9;
+    for (int i = 0; i <= N; i++) {
+      float t = float(i) / float(N);
+      float d = distance(bez(t), localPos);
+      if (d < bestD) { bestD = d; bestT = t; }
+    }
+    float step = 1.0 / float(N);
+    for (int k = 0; k < 4; k++) {
+      step *= 0.5;
+      float ta = clamp(bestT - step, 0.0, 1.0);
+      float tb = clamp(bestT + step, 0.0, 1.0);
+      float da = distance(bez(ta), localPos);
+      float db = distance(bez(tb), localPos);
+      if (da < bestD) { bestD = da; bestT = ta; }
+      if (db < bestD) { bestD = db; bestT = tb; }
+    }
+
+    // ③ 剖面：中间亮芯（窄）+ 向外柔和外光晕（宽）
+    float v = bestD / halfW;
+    float core = exp(-v * v * 3.4);
+    float halo = exp(-v * v * 0.62) * 0.62;
+
+    // ④ 两端渐隐（避免起终点硬切）
+    float f = max(shapeParams.w, 0.001);
+    float ends = smoothstep(0.0, f, bestT) * smoothstep(1.0, 1.0 - f, bestT);
+
+    // ⑤ 流光：一颗光斑沿曲线从起点滚向终点
+    float fw = max(flowParams.y, 0.001);
+    float flow = exp(-pow((bestT - flowParams.x) / fw, 2.0)) * ends;
+
+    float inten = max(shapeParams.z, 0.0);
+    vec3 col = coreColor.rgb * core * inten
+             + edgeColor.rgb * halo * inten
+             + coreColor.rgb * flow * flowParams.z * inten * 1.8;
+    float a = clamp(core + halo, 0.0, 1.0) * ends * color.a;
+
+    return vec4(col * color.rgb, a);
+  }
+}%

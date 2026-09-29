@@ -1,0 +1,135 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "f1d504db-73f7-4cd8-8067-d39c633a97e2",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "f1d504db-73f7-4cd8-8067-d39c633a97e2@f9941",
+      "displayName": "trace_02_rotated",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 4,
+        "offsetY": 0.5,
+        "trimX": 9,
+        "trimY": 160,
+        "width": 502,
+        "height": 191,
+        "rawWidth": 512,
+        "rawHeight": 512,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -251,
+            -95.5,
+            0,
+            251,
+            -95.5,
+            0,
+            -251,
+            95.5,
+            0,
+            251,
+            95.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            9,
+            352,
+            511,
+            352,
+            9,
+            161,
+            511,
+            161
+          ],
+          "nuv": [
+            0.017578125,
+            0.314453125,
+            0.998046875,
+            0.314453125,
+            0.017578125,
+            0.6875,
+            0.998046875,
+            0.6875
+          ],
+          "minPos": [
+            -251,
+            -95.5,
+            0
+          ],
+          "maxPos": [
+            251,
+            95.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "f1d504db-73f7-4cd8-8067-d39c633a97e2@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "f1d504db-73f7-4cd8-8067-d39c633a97e2@6c48a",
+      "displayName": "trace_02_rotated",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "f1d504db-73f7-4cd8-8067-d39c633a97e2",
+        "visible": false,
+        "hasAlpha": true
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "f1d504db-73f7-4cd8-8067-d39c633a97e2@6c48a"
+  }
+}

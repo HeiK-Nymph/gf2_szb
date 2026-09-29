@@ -1,0 +1,142 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "785b239a-860d-4115-bc75-0c5f5bb17d7c",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "785b239a-860d-4115-bc75-0c5f5bb17d7c@6c48a",
+      "displayName": "GoldFollower",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "785b239a-860d-4115-bc75-0c5f5bb17d7c",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "785b239a-860d-4115-bc75-0c5f5bb17d7c@f9941",
+      "displayName": "GoldFollower",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "premultiplyAlpha": false,
+        "generateMipmap": false,
+        "anisotropy": 0,
+        "trimType": "auto",
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -1,
+        "offsetY": 0,
+        "trimX": 4,
+        "trimY": 1,
+        "width": 210,
+        "height": 282,
+        "rawWidth": 220,
+        "rawHeight": 284,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "785b239a-860d-4115-bc75-0c5f5bb17d7c@6c48a",
+        "atlasUuid": "",
+        "mipfilter": "none",
+        "packable": true,
+        "vertices": {
+          "rawPosition": [
+            -105,
+            -141,
+            0,
+            105,
+            -141,
+            0,
+            -105,
+            141,
+            0,
+            105,
+            141,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            4,
+            283,
+            214,
+            283,
+            4,
+            1,
+            214,
+            1
+          ],
+          "nuv": [
+            0.01818181818181818,
+            0.0035211267605633804,
+            0.9727272727272728,
+            0.0035211267605633804,
+            0.01818181818181818,
+            0.9964788732394366,
+            0.9727272727272728,
+            0.9964788732394366
+          ],
+          "minPos": [
+            -105,
+            -141,
+            0
+          ],
+          "maxPos": [
+            105,
+            141,
+            0
+          ]
+        },
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "785b239a-860d-4115-bc75-0c5f5bb17d7c@6c48a"
+  }
+}

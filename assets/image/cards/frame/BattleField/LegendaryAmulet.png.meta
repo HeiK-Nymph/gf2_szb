@@ -1,0 +1,142 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb@6c48a",
+      "displayName": "LegendaryAmulet",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb@f9941",
+      "displayName": "LegendaryAmulet",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "premultiplyAlpha": false,
+        "generateMipmap": false,
+        "anisotropy": 0,
+        "trimType": "auto",
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -7.5,
+        "offsetY": 7.5,
+        "trimX": 1,
+        "trimY": 4,
+        "width": 203,
+        "height": 261,
+        "rawWidth": 220,
+        "rawHeight": 284,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb@6c48a",
+        "atlasUuid": "",
+        "mipfilter": "none",
+        "packable": true,
+        "vertices": {
+          "rawPosition": [
+            -101.5,
+            -130.5,
+            0,
+            101.5,
+            -130.5,
+            0,
+            -101.5,
+            130.5,
+            0,
+            101.5,
+            130.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            1,
+            280,
+            204,
+            280,
+            1,
+            19,
+            204,
+            19
+          ],
+          "nuv": [
+            0.004545454545454545,
+            0.06690140845070422,
+            0.9272727272727272,
+            0.06690140845070422,
+            0.004545454545454545,
+            0.9859154929577465,
+            0.9272727272727272,
+            0.9859154929577465
+          ],
+          "minPos": [
+            -101.5,
+            -130.5,
+            0
+          ],
+          "maxPos": [
+            101.5,
+            130.5,
+            0
+          ]
+        },
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "bb60ed7d-35c3-4727-9374-54c0b8ed22cb@6c48a"
+  }
+}

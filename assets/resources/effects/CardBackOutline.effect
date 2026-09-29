@@ -1,0 +1,153 @@
+// CardBackOutline.effect —— 2D UI 卡背「金色描边」效果（覆盖层，不修改卡背原图）
+// ============================================================================
+// 用途：卡背（CardBack.png）互相重叠时分不清张数 —— 给每张卡背叠一层**细描边**
+//       作为分隔线。描边画在卡背轮廓的**最外圈内侧**（内描边）：
+//         · 卡外完全透明（内部透明的反面：卡外也不画，不会加粗卡牌外沿）；
+//         · 卡背最外 thickness 像素被染成描边色，其余区域 alpha=0；
+//       因此任意两张卡背重叠时，每张都有自己的完整轮廓线，数量一眼可数。
+//
+// 为什么用 shader 而不是生成一张描边 PNG：
+//   · 描边粗细是 uniform（outlineParams.x），运行时/Inspector 改了立刻生效，
+//     不需要重新生成图片资源；颜色同理（outlineColor，配合白色描边图也能 tint）；
+//   · 直接复用卡背 SpriteFrame，不额外占显存；每张卡一个 Material 实例互不干扰。
+//
+// 兼容 trim / 动态图集（与 CardGlow.effect 同一套踩坑结论）：
+//   SpriteFrame 可能被 trim、甚至被打进运行时动态图集（uv0 只跨一个小子块），
+//   采样必须走 outlineUV「帧分数 ↔ 纹理 UV」的仿射映射，直接把 uv0 当 0..1 用
+//   会采到图集里隔壁的图（CardGlow 实测画出矩形色块）。
+//
+// 参数（由 CardBackBorder.ts 在运行时写入）：
+//   outlineColor   描边颜色（默认金色 #E8C878）
+//   outlineParams  x = 描边粗细（卡背纹理像素）｜ y = 强度 0..1 ｜ zw = 预留
+//   outlineShape   xy = 帧分数单位的纹素尺寸(1/rect宽, 1/rect高)
+//   outlineUV      xy = rect 在纹理 UV 空间的原点 ｜ zw = rect 的 UV 尺寸
+// ============================================================================
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: card-outline-vs:vert
+      frag: card-outline-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          # 标准 alpha 混合：描边是一层细实线，直接覆盖在卡背之上
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: one
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        outlineColor: { value: [0.9098, 0.7843, 0.4706, 1.0], editor: { type: color } }
+        outlineParams: { value: [2.0, 1.0, 0.0, 0.0] }
+        outlineShape: { value: [0.0045454545, 0.0035211268, 0.0, 0.0] }
+        outlineUV: { value: [0.0, 0.0, 1.0, 1.0] }
+}%
+
+// ---------------------------------------------------------------------------
+// ⚠️ 项目内（db://assets）effect 无法引用 db://internal 内置 effect 的程序
+//    （EFX2001: can not resolve 'sprite-vs'）→ 与 CardGlow.effect 同样把
+//    builtin-sprite.effect 的顶点程序内联进来（逐字一致，未做改动）。
+// ---------------------------------------------------------------------------
+CCProgram card-outline-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram card-outline-fs %{
+  precision highp float;
+
+  in vec4 color;
+  in vec2 uv0;
+
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  uniform Constant {
+    vec4 outlineColor;   // rgb = 描边颜色
+    vec4 outlineParams;  // x = 粗细(卡背纹理像素)  y = 强度 0..1  zw = 预留
+    vec4 outlineShape;   // xy = 帧分数单位的纹素尺寸(1/rect宽, 1/rect高)  zw = 预留
+    vec4 outlineUV;      // xy = rect 在纹理 UV 空间的原点(min)  zw = rect 的 UV 尺寸
+                         // 🔑 SpriteFrame 可能被 trim / 打进运行时动态图集：uv0 只跨
+                         //    rect 子矩形，采样必须走「帧分数 ↔ 纹理 UV」仿射映射。
+  };
+
+  /**
+   * 取卡背贴图在「帧分数」f（0..1 = 跨卡背 rect）处的不透明度。
+   * 越界（rect 外）一律返回 0：兼容 rect 外邻居采样，也不会采到图集邻居。
+   */
+  float alphaAt (vec2 f) {
+    if (f.x < 0.0 || f.x > 1.0 || f.y < 0.0 || f.y > 1.0) { return 0.0; }
+    return texture(cc_spriteTexture, outlineUV.xy + f * outlineUV.zw).a;
+  }
+
+  vec4 frag () {
+    float thick = max(outlineParams.x, 0.0);
+    float intensity = clamp(outlineParams.y, 0.0, 1.0);
+    if (thick <= 0.01 || intensity <= 0.001) { return vec4(0.0); }
+
+    // 本像素 → 帧分数空间
+    vec2 q = (uv0 - outlineUV.xy) / outlineUV.zw;
+
+    // 卡外不画（描边只落在卡背自身像素上 = 内描边，不会加粗卡牌外沿）
+    float own = alphaAt(q);
+    if (own <= 0.004) { return vec4(0.0); }
+
+    // —— 内描边：本像素向外 thick 像素的方向上只要采到「卡外」，
+    //    本像素就属于最外圈 → 染成描边色。8 方向 × 2 半径(0.5t, 1.0t)：
+    //    取邻域最小不透明度 minA，edge = own × (1 - minA)。
+    //    实心内部所有邻居都不透明 → edge=0（内部透明 ✓）；
+    //    最外 thick 像素总有邻居在卡外 → edge=own（细实线 ✓）。
+    vec2 step = vec2(thick * outlineShape.x, thick * outlineShape.y);
+    float minA = 1.0;
+    for (int d = 0; d < 8; d++) {
+      float ang = 6.28318530718 * float(d) / 8.0;
+      vec2 dir = vec2(cos(ang), sin(ang));
+      minA = min(minA, alphaAt(q + dir * step * 0.5));
+      minA = min(minA, alphaAt(q + dir * step));
+    }
+    float edge = own * clamp((1.0 - minA) * 1.5, 0.0, 1.0);
+
+    float a = edge * outlineColor.a * intensity * color.a;
+    return vec4(outlineColor.rgb, a);
+  }
+}%

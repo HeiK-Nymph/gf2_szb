@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755@f9941",
+      "displayName": "shieldWhite_Edit",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 0,
+        "offsetY": -1.5,
+        "trimX": 6,
+        "trimY": 7,
+        "width": 544,
+        "height": 545,
+        "rawWidth": 556,
+        "rawHeight": 556,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -272,
+            -272.5,
+            0,
+            272,
+            -272.5,
+            0,
+            -272,
+            272.5,
+            0,
+            272,
+            272.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            6,
+            549,
+            550,
+            549,
+            6,
+            4,
+            550,
+            4
+          ],
+          "nuv": [
+            0.01079136690647482,
+            0.007194244604316547,
+            0.9892086330935251,
+            0.007194244604316547,
+            0.01079136690647482,
+            0.987410071942446,
+            0.9892086330935251,
+            0.987410071942446
+          ],
+          "minPos": [
+            -272,
+            -272.5,
+            0
+          ],
+          "maxPos": [
+            272,
+            272.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755@6c48a",
+      "displayName": "shieldWhite_Edit",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "2b6d0042-8a37-4ad5-b0e5-ba0fd5ca1755@6c48a"
+  }
+}

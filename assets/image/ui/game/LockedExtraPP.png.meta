@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "6df6a768-0d5b-4eae-b452-486f29bf1dcf",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "6df6a768-0d5b-4eae-b452-486f29bf1dcf@f9941",
+      "displayName": "LockedExtraPP",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": -13,
+        "offsetY": 1.5,
+        "trimX": 14,
+        "trimY": 40,
+        "width": 1553,
+        "height": 490,
+        "rawWidth": 1607,
+        "rawHeight": 573,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -776.5,
+            -245,
+            0,
+            776.5,
+            -245,
+            0,
+            -776.5,
+            245,
+            0,
+            776.5,
+            245,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            14,
+            533,
+            1567,
+            533,
+            14,
+            43,
+            1567,
+            43
+          ],
+          "nuv": [
+            0.008711885500933417,
+            0.07504363001745201,
+            0.9751088985687617,
+            0.07504363001745201,
+            0.008711885500933417,
+            0.9301919720767888,
+            0.9751088985687617,
+            0.9301919720767888
+          ],
+          "minPos": [
+            -776.5,
+            -245,
+            0
+          ],
+          "maxPos": [
+            776.5,
+            245,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "6df6a768-0d5b-4eae-b452-486f29bf1dcf@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "6df6a768-0d5b-4eae-b452-486f29bf1dcf@6c48a",
+      "displayName": "LockedExtraPP",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "6df6a768-0d5b-4eae-b452-486f29bf1dcf",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "6df6a768-0d5b-4eae-b452-486f29bf1dcf@6c48a"
+  }
+}

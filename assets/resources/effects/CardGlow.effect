@@ -1,0 +1,209 @@
+// CardGlow.effect —— 2D UI 卡牌「外发光」效果（**只向外扩散，绝不向内覆盖卡牌本体**）
+// ============================================================================
+// 用途：战场卡牌被按住选中时，在**卡牌轮廓外侧**生成一圈柔和的渐变光晕
+//       （参考《影之诗》选中卡牌时的橙火外圈）。
+//
+// 为什么能适配「异形卡框」而不是画一个矩形边框：
+//   本效果完全以**卡框贴图自身的 alpha 轮廓**为输入，做「环形加权扩散」
+//   （5 圈 × 12 方向 + 中心，权重随半径递减），因此任何不规则轮廓都会
+//   被原样向外糊开一圈 —— 矩形/异形卡框、镂空装饰都自动适配。
+//
+// 为什么光晕是「只向外」的：
+//   ① 光晕画在**卡牌最底层**（CardGlowFx 节点的 siblingIndex = 0），
+//      CardImage / CardFrame 之后绘制、天然把内侧盖住；
+//   ② 片元里再用 smoothstep 把「卡面自身不透明处」的光晕压掉，
+//      且过渡区间落在卡面**内部**，所以外轮廓处不会出现暗环。
+//
+// 性能（网页平台可控）：
+//   · 只在**发光强度 > 0** 时输出（强度为 0 直接 return，且组件会把整块节点 active=false
+//     → 完全不产生 DrawCall / 片元着色）；
+//   · 固定 81 次纹理采样（5 圈 × 16 方向 + 中心），没有动态循环、没有分支发散；
+//   · 光晕方块尺寸 = 卡框 + 2×padding，面积只比卡牌略大，采样像素数很少。
+//
+// 参数（与 CardGlow.ts 的 Inspector 属性一一对应，由组件在运行时写入）：
+//   glowColor  光晕颜色（rgb 线性 0..1）
+//   glowParams x = 光晕厚度（卡框纹理像素）｜ y = 柔和度 0..1 ｜ z = 发光强度 ｜ w = 预留
+//   glowShape  xy = 纹素尺寸(1/宽, 1/高)   ｜ zw = 卡面尺寸在光晕方块中的占比
+// ============================================================================
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: card-glow-vs:vert
+      frag: card-glow-fs:frag
+      depthStencilState:
+        depthTest: false
+        depthWrite: false
+      blendState:
+        targets:
+        - blend: true
+          # 标准 alpha 混合（非加色）：参考图实测光晕是「不透明橙红渐变」
+          #（边缘 255,199,83 / 中段 248,135,38 / 外缘 237,116,73 —— B 通道比背景还低），
+          # 加色混合的 B 通道只会往上加，永远压不出这种饱和橙红，只会过曝成黄白。
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: one
+          blendDstAlpha: one_minus_src_alpha
+      rasterizerState:
+        cullMode: none
+      properties:
+        glowColor: { value: [0.96, 0.45, 0.14, 1.0], editor: { type: color } }
+        glowParams: { value: [40.0, 0.7, 0.0, 0.0] }
+        glowShape: { value: [0.0046511628, 0.0035714286, 0.0, 0.0] }
+        glowUV: { value: [0.0, 0.0, 1.0, 1.0] }
+}%
+
+// ---------------------------------------------------------------------------
+// ⚠️ 为什么这里要**内联**一份顶点着色器：
+//    最初写的是 `vert: sprite-vs:vert`（直接引用引擎内置 builtin-sprite.effect 的顶点程序），
+//    结果导入直接报错 `Error EFX2001: can not resolve 'sprite-vs'` ——
+//    **项目内（db://assets）的 effect 无法引用 db://internal 里内置 effect 的程序**，
+//    只有 db://internal 下的 effect（builtin-spine / gizmo 等）才能互相引用。
+//    所以下面把 builtin-sprite.effect 的 `sprite-vs` 原样拷贝进来（逐字一致，未做任何改动），
+//    顶点行为与普通 UI Sprite 完全一致，本效果不会影响卡牌原有渲染。
+// ---------------------------------------------------------------------------
+CCProgram card-glow-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #if USE_LOCAL
+    #include <builtin/uniforms/cc-local>
+  #endif
+  #if SAMPLE_FROM_RT
+    #include <common/common-define>
+  #endif
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  in vec4 a_color;
+
+  out vec4 color;
+  out vec2 uv0;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1);
+
+    #if USE_LOCAL
+      pos = cc_matWorld * pos;
+    #endif
+
+    #if USE_PIXEL_ALIGNMENT
+      pos = cc_matView * pos;
+      pos.xyz = floor(pos.xyz);
+      pos = cc_matProj * pos;
+    #else
+      pos = cc_matViewProj * pos;
+    #endif
+
+    uv0 = a_texCoord;
+    #if SAMPLE_FROM_RT
+      CC_HANDLE_RT_SAMPLE_FLIP(uv0);
+    #endif
+    color = a_color;
+
+    return pos;
+  }
+}%
+
+CCProgram card-glow-fs %{
+  precision highp float;
+
+  // cc_time：引擎启动后的累计时间（x 分量，秒）——驱动火焰边缘的流动蠕动
+  #include <builtin/uniforms/cc-global>
+
+  // 与内置 sprite-vs 的输出保持一致：color = 顶点色（节点颜色 / UI 透明度），uv0 = 贴图 UV
+  in vec4 color;
+  in vec2 uv0;
+
+  #pragma builtin(local)
+  layout(set = 2, binding = 12) uniform sampler2D cc_spriteTexture;
+
+  uniform Constant {
+    vec4 glowColor;   // rgb = 光晕颜色
+    vec4 glowParams;  // x = 厚度(卡框纹理像素) y = 柔和度 0..1 z = 发光强度 w = 预留
+    vec4 glowShape;   // xy = 帧分数单位的采样步长(1/rect宽, 1/rect高)  zw = 预留
+    vec4 glowUV;      // xy = 卡框 rect 在纹理 UV 空间的原点(min)  zw = rect 的 UV 尺寸
+                      // 🔑 SpriteFrame 可能被 trim / 打进图集：uv0 只跨 rect 子矩形，
+                      //    采样必须走「帧分数(0..1 跨 rect) ↔ 纹理 UV」的仿射映射，
+                      //    直接把 uv0 当 0..1 用会采到图集里隔壁的卡图（实测画出矩形色块）。
+  };
+
+  #define GLOW_TAU   6.28318530718
+  #define GLOW_RINGS 5     // 采样圈数（越大越柔和、越耗性能）
+  #define GLOW_DIRS  16    // 每圈方向数（越大轮廓跟随越圆滑、雕花转角不出棱角；5×16+1=81 次采样）
+
+  /**
+   * 取卡框贴图在「帧分数」f（0..1 = 跨卡框裁剪矩形）处的**不透明度**。
+   * 🔑 f 先经 glowUV 仿射映射回纹理 UV 再采样：兼容 trim / 动态图集；
+   *    越界（rect 外）一律返回 0 → 光晕方块四周留白天然透明，也不会采到图集邻居。
+   */
+  float alphaAt (vec2 f) {
+    if (f.x < 0.0 || f.x > 1.0 || f.y < 0.0 || f.y > 1.0) { return 0.0; }
+    return texture(cc_spriteTexture, glowUV.xy + f * glowUV.zw).a;
+  }
+
+  vec4 frag () {
+    float intensity = glowParams.z;
+    // 强度为 0 → 整块不输出（组件同时会把节点 active=false，这里只是双保险）
+    if (intensity <= 0.001) { return vec4(0.0); }
+
+    // —— 1. 把本像素换算到「卡框帧分数」空间 ——
+    // 光晕方块的 contentSize = 卡框 + 四周 padding，而 Sprite SIMPLE 模式会把**整张卡框
+    // 拉伸铺满整个方块**。所以必须分两步：
+    //   q  = uv0 归一化到「方块坐标」0..1（uv0 是卡框 rect 的图集 UV，要先减原点除尺寸）；
+    //   t0 = (q - pad) / innerScale —— 卡框本体只占方块**中央 innerScale** 部分，
+    //        中心区域 t0 ∈ 0..1 = 卡框本体；四周 padding 区域 t0 越界 → alphaAt 返回 0，
+    //        那圈留白就是光晕向外的扩散空间。
+    // 🔴 若直接把 q 当帧分数用（漏掉 innerScale），等于把卡框放大 (W+2P)/W 倍，
+    //    膨胀包络趋向方块形状 → 光晕会画成「贴着方块边缘的圆角矩形描边」（实测踩过）。
+    vec2 q = (uv0 - glowUV.xy) / glowUV.zw;
+    vec2 pad = (vec2(1.0) - glowShape.zw) * 0.5;
+    vec2 t0 = (q - pad) / glowShape.zw;
+
+    vec2  texel   = glowShape.xy;                                        // 帧分数单位的采样步长
+    float thick   = max(glowParams.x, 0.0);                              // 光晕厚度（纹理像素）
+    float softExp = mix(8.0, 0.8, clamp(glowParams.y, 0.0, 1.0));        // 柔和度 → 衰减指数：越小越"软"、拖尾越长
+
+    // —— 2. 环形加权扩散：把卡框轮廓的 alpha 向外糊开一圈 ——
+    // 权重 w = (1 - 相对半径)^softExp，越靠外越低 → 光晕向外渐隐。
+    // 归一化除以所有权重之和，因此「轮廓内侧」自然趋于 1、「远处」趋于 0。
+    float wsum = 1.0;
+    for (int k = 1; k <= GLOW_RINGS; k++) {
+      float rf = (float(k) - 0.5) / float(GLOW_RINGS);
+      wsum += pow(max(1.0 - rf, 0.0), softExp) * float(GLOW_DIRS);
+    }
+
+    float own = alphaAt(t0);                                             // 本像素在卡面纹理上的不透明度
+    float acc = own;
+    for (int d = 0; d < GLOW_DIRS; d++) {
+      float ang = GLOW_TAU * float(d) / float(GLOW_DIRS);
+      vec2 dir = vec2(cos(ang), sin(ang));
+      // 🔥 火焰流动感：每个方向的采样半径随「方向角 + 时间」轻微蠕动（幅度 ±8%），
+      //    两列不同频率的正弦叠加 → 光晕边缘像火苗一样不规则地缓缓舔动，
+      //    不是机械的固定描边。只改采样半径，不增加任何采样次数。
+      float wob = sin(GLOW_TAU * 3.0 * float(d) / float(GLOW_DIRS) + cc_time.x * 2.0)
+                + sin(GLOW_TAU * 5.0 * float(d) / float(GLOW_DIRS) - cc_time.x * 3.1);
+      for (int k = 1; k <= GLOW_RINGS; k++) {
+        float rf = (float(k) - 0.5) / float(GLOW_RINGS);
+        float w = pow(max(1.0 - rf, 0.0), softExp);
+        float rpix = rf * thick * (1.0 + 0.08 * wob);                    // 该圈半径（纹理像素，含火焰蠕动）
+        acc += alphaAt(t0 + dir * vec2(rpix * texel.x, rpix * texel.y)) * w;
+      }
+    }
+    // 🔑 轮廓**外侧**的扩张值最高只能到 ~0.5（采样圆盘恰有一半落在形状内），
+    //    ×2 归一化后贴边光晕才能达到全强度；卡面内侧会被下面的 own 掩罩压掉，不怕过亮。
+    float glow = clamp(acc / max(wsum, 0.0001) * 2.0, 0.0, 1.0);
+
+    // —— 3. 只向外：把「卡面自身不透明处」的光晕压掉 ——
+    // smoothstep 的过渡区间 (0.55, 1.0) 落在卡面**内部**：卡框外轮廓（own≈0）不衰减，
+    // 所以不会在卡牌边缘留下暗环；而卡面实心处（own≈1）的光晕被压成 0 —— 绝不向内发光。
+    glow *= 1.0 - smoothstep(0.55, 1.0, own);
+
+    // —— 4. 火焰感输出（曲线对齐参考图实测：外缘(237,116,73)→中段(248,135,38)→芯(255,199,83)）——
+    // g2 = 幂次提亮：把中段灰阶拉起来，避免「薄雾感」；
+    // hot = 只在贴近轮廓处混入金黄芯；基色保持饱和橙红（alpha 混合下 B 通道压得住）。
+    float g2 = pow(glow, 0.45);
+    float hot = smoothstep(0.35, 0.95, glow);
+    vec3 core = vec3(1.0, 0.78, 0.33);                                   // 芯 ≈ 参考图边缘实测 (255,199,84)
+    vec3 rgb = mix(glowColor.rgb, core, hot);
+    float a = clamp(pow(glow, 0.5) * intensity * 0.6, 0.0, 1.0) * color.a;   // √ 曲线：光带浓密饱满、外缘半透明慢衰减
+    return vec4(rgb, a);
+  }
+}%

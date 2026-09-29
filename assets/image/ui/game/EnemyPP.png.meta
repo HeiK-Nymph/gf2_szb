@@ -1,0 +1,134 @@
+{
+  "ver": "1.0.27",
+  "importer": "image",
+  "imported": true,
+  "uuid": "4428f55d-9f38-40d8-a286-c93b457e75c0",
+  "files": [
+    ".json",
+    ".png"
+  ],
+  "subMetas": {
+    "f9941": {
+      "importer": "sprite-frame",
+      "uuid": "4428f55d-9f38-40d8-a286-c93b457e75c0@f9941",
+      "displayName": "EnemyPP",
+      "id": "f9941",
+      "name": "spriteFrame",
+      "userData": {
+        "trimThreshold": 1,
+        "rotated": false,
+        "offsetX": 6.5,
+        "offsetY": 0,
+        "trimX": 59,
+        "trimY": 22,
+        "width": 1453,
+        "height": 493,
+        "rawWidth": 1558,
+        "rawHeight": 537,
+        "borderTop": 0,
+        "borderBottom": 0,
+        "borderLeft": 0,
+        "borderRight": 0,
+        "packable": true,
+        "pixelsToUnit": 100,
+        "pivotX": 0.5,
+        "pivotY": 0.5,
+        "meshType": 0,
+        "vertices": {
+          "rawPosition": [
+            -726.5,
+            -246.5,
+            0,
+            726.5,
+            -246.5,
+            0,
+            -726.5,
+            246.5,
+            0,
+            726.5,
+            246.5,
+            0
+          ],
+          "indexes": [
+            0,
+            1,
+            2,
+            2,
+            1,
+            3
+          ],
+          "uv": [
+            59,
+            515,
+            1512,
+            515,
+            59,
+            22,
+            1512,
+            22
+          ],
+          "nuv": [
+            0.037869062901155326,
+            0.040968342644320296,
+            0.9704749679075738,
+            0.040968342644320296,
+            0.037869062901155326,
+            0.9590316573556797,
+            0.9704749679075738,
+            0.9590316573556797
+          ],
+          "minPos": [
+            -726.5,
+            -246.5,
+            0
+          ],
+          "maxPos": [
+            726.5,
+            246.5,
+            0
+          ]
+        },
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "4428f55d-9f38-40d8-a286-c93b457e75c0@6c48a",
+        "atlasUuid": "",
+        "trimType": "auto"
+      },
+      "ver": "1.0.12",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "4428f55d-9f38-40d8-a286-c93b457e75c0@6c48a",
+      "displayName": "EnemyPP",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "clamp-to-edge",
+        "wrapModeT": "clamp-to-edge",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "4428f55d-9f38-40d8-a286-c93b457e75c0",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "4428f55d-9f38-40d8-a286-c93b457e75c0@6c48a"
+  }
+}
